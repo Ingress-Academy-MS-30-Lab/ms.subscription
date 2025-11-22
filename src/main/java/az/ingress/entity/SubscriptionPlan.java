@@ -1,6 +1,7 @@
-package az.ingress.dao.entity;
+package az.ingress.entity;
 
-import az.ingress.model.enums.SubscriptionPeriod;
+import az.ingress.enums.SubscriptionPeriod;
+import az.ingress.enums.SubscriptionPlanStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -16,9 +17,11 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import static javax.persistence.GenerationType.IDENTITY;
 
@@ -44,15 +47,21 @@ public class SubscriptionPlan {
 
     private BigDecimal price;
 
-    private String currency;
+    private String title;
 
     private String description;
 
-    private boolean active = true;
+    private SubscriptionPlanStatus status;
+
+    private boolean active;
+
+    @OneToMany(mappedBy = "plan")
+    @ToString.Exclude
+    private List<Subscription> subscriptions;
 
     @CreationTimestamp
-    private Instant createdAt = Instant.now();
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 }

@@ -1,2 +1,16 @@
 server:
   port: 8080
+
+client:
+  payment:
+    url: http://payment-ms:8081
+  product:
+    url: http://product-ms:8082
+
+spring:
+  jpa:
+    open-in-view: false
+
+subscription:
+  scheduler:
+    interval-minutes: 30

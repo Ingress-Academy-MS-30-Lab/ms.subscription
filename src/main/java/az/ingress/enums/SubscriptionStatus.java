@@ -1,7 +1,6 @@
-package az.ingress.model.enums;
+package az.ingress.enums;
 
 public enum SubscriptionStatus {
-    PENDING,
     ACTIVE,
     EXPIRED,
     CANCELLED,

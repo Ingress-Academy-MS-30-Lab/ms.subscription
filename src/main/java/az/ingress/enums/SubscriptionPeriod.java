@@ -1,4 +1,4 @@
-package az.ingress.model.enums;
+package az.ingress.enums;
 
 public enum SubscriptionPeriod {
     WEEKLY,

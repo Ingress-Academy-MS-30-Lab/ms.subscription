@@ -1,7 +1,6 @@
-package az.ingress.dao.entity;
+package az.ingress.entity;
 
-import az.ingress.model.enums.Currency;
-import az.ingress.model.enums.SubscriptionStatus;
+import az.ingress.enums.SubscriptionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -15,12 +14,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 import static javax.persistence.GenerationType.IDENTITY;
 
@@ -39,25 +39,33 @@ public class Subscription {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    private UUID supplierId;
+    private Long supplierId;
 
     @Enumerated(EnumType.STRING)
     private SubscriptionStatus status;
 
-    private BigDecimal price;
+    private LocalDateTime startDate;
 
-    @Enumerated(EnumType.STRING)
-    private Currency currency;
+    private LocalDateTime endDate;
 
-    private Instant startDate;
+    private String transactionId;
 
-    private Instant endDate;
+    private long cardId;
+
+    private long renewCount;
+
+    private long retryCount;
 
     private boolean autoRenew;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id")
+    @ToString.Exclude
+    private SubscriptionPlan plan;
+
     @CreationTimestamp
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 }
