@@ -1,6 +1,6 @@
 package az.ingress.service.concrete;
 
-import az.ingress.client.ProductClient;
+import az.ingress.client.product.ProductClient;
 import az.ingress.dto.request.SubscriptionPlanRequest;
 import az.ingress.dto.response.SubscriptionPlanResponse;
 import az.ingress.entity.SubscriptionPlan;
@@ -40,7 +40,7 @@ public class SubscriptionPlanServiceHandler implements SubscriptionPlanService {
             throw new BadRequestException(SUBSCRIPTION_PLAN_EXISTS, request.getProductId());
         }
 
-        SubscriptionPlan plan = SubscriptionPlanMapper.INSTANCE.toEntity(request);
+        SubscriptionPlan plan = SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER.toEntity(request);
 
         repository.save(plan);
     }
@@ -48,7 +48,7 @@ public class SubscriptionPlanServiceHandler implements SubscriptionPlanService {
     @Override
     public List<SubscriptionPlanResponse> getAll() {
         return repository.findAllByActiveIsFalse().stream()
-                .map(SubscriptionPlanMapper.INSTANCE::toResponse)
+                .map(SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER::toResponse)
                 .toList();
     }
 
@@ -56,7 +56,7 @@ public class SubscriptionPlanServiceHandler implements SubscriptionPlanService {
     public SubscriptionPlanResponse get(Long id) {
         SubscriptionPlan plan = getSubscriptionPlan(id);
 
-        return SubscriptionPlanMapper.INSTANCE.toResponse(plan);
+        return SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER.toResponse(plan);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class SubscriptionPlanServiceHandler implements SubscriptionPlanService {
 
         repository.save(plan);
 
-        return SubscriptionPlanMapper.INSTANCE.toResponse(plan);
+        return SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER.toResponse(plan);
     }
 
     @Override

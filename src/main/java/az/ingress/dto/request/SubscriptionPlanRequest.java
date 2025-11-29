@@ -1,10 +1,14 @@
 package az.ingress.dto.request;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class SubscriptionPlanRequest {
     private Long productId;
     private String period;

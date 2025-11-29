@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentResponse {
+public class PaymentResponseDto {
     private String status;
     private String transactionId;
 }

@@ -1,21 +1,29 @@
 package az.ingress.service.concrete;
 
-import az.ingress.client.PaymentClient;
-import az.ingress.dto.request.PaymentRequest;
-import az.ingress.dto.request.RefundRequest;
+import az.ingress.client.payment.PaymentClient;
+import az.ingress.dto.request.PaymentRequestDto;
+import az.ingress.dto.request.RefundRequestDto;
 import az.ingress.dto.request.SubscriptionRequest;
-import az.ingress.dto.response.PaymentResponse;
+import az.ingress.dto.response.PaymentResponseDto;
 import az.ingress.entity.Subscription;
 import az.ingress.entity.SubscriptionPlan;
 import az.ingress.enums.SubscriptionStatus;
+import az.ingress.exception.BadRequestException;
+import az.ingress.exception.ResourceNotFoundException;
 import az.ingress.repository.SubscriptionPlanRepository;
 import az.ingress.repository.SubscriptionRepository;
 import az.ingress.service.abstraction.SubscriptionService;
-import az.ingress.util.SubscriptionPeriodUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+
+import static az.ingress.exception.ErrorMessageKey.PAYMENT_FAILED;
+import static az.ingress.exception.ErrorMessageKey.PAYMENT_REFUND_FAILED;
+import static az.ingress.exception.ErrorMessageKey.SUBSCRIPTION_IS_NOT_REFUNDABLE;
+import static az.ingress.exception.ErrorMessageKey.SUBSCRIPTION_NOT_FOUND;
+import static az.ingress.exception.ErrorMessageKey.SUBSCRIPTION_PLAN_EXISTS;
+import static az.ingress.exception.ErrorMessageKey.SUBSCRIPTION_PLAN_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -27,27 +35,27 @@ public class SubscriptionServiceHandler implements SubscriptionService {
     @Override
     public void createSubscription(SubscriptionRequest request) {
         SubscriptionPlan subscriptionPlan = subscriptionPlanRepository.findById(request.getSubscriptionPlanId())
-                .orElseThrow(() -> new RuntimeException("Subscription Plan Not Found"));
+                .orElseThrow(() -> new ResourceNotFoundException(SUBSCRIPTION_PLAN_NOT_FOUND, request.getSubscriptionPlanId()));
 
         if (subscriptionRepository.existsBySupplierIdAndProductId(
                 request.getSupplierId(),
                 subscriptionPlan.getProductId())) {
-            throw new RuntimeException("Subscription already exists");
+            throw new BadRequestException(SUBSCRIPTION_PLAN_EXISTS, request.getSupplierId(), subscriptionPlan.getProductId());
         }
 
-        PaymentResponse paymentResponse = paymentClient.pay(PaymentRequest.builder()
+        PaymentResponseDto paymentResponseDto = paymentClient.pay(PaymentRequestDto.builder()
                 .cardId(request.getCardId())
                 .userId(request.getSupplierId())
                 .amount(subscriptionPlan.getPrice())
                 .build()
         );
 
-        if (!paymentResponse.getStatus().equals("SUCCESS")) {
-            throw new RuntimeException();
+        if (!"SUCCESS".equals(paymentResponseDto.getStatus())) {
+            throw new BadRequestException(PAYMENT_FAILED);
         }
 
         LocalDateTime startDate = LocalDateTime.now();
-        LocalDateTime endDate = SubscriptionPeriodUtil.calculateEndDate(startDate, subscriptionPlan.getPeriod());
+        LocalDateTime endDate = subscriptionPlan.getPeriod().calculateEndDate(startDate);
 
         Subscription subscription = Subscription.builder()
                 .supplierId(request.getSupplierId())
@@ -63,8 +71,7 @@ public class SubscriptionServiceHandler implements SubscriptionService {
 
     @Override
     public void renewSubscription(Long id) {
-        Subscription subscription = subscriptionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subscription Not Found"));
+        Subscription subscription = getSubscription(id);
 
         subscription.setStatus(SubscriptionStatus.CANCELLED);
         subscriptionRepository.save(subscription);
@@ -72,9 +79,7 @@ public class SubscriptionServiceHandler implements SubscriptionService {
 
     @Override
     public void cancelSubscription(Long id, boolean immediateRefund) {
-        Subscription subscription = subscriptionRepository
-                .findByIdAndStatus(id, SubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new RuntimeException("Subscription Not Found"));
+        Subscription subscription = getSubscription(id);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -84,18 +89,18 @@ public class SubscriptionServiceHandler implements SubscriptionService {
                     .isAfter(now);
 
             if (!refundable) {
-                throw new RuntimeException("Payment cannot be cancelled after 1 day");
+                throw new BadRequestException(SUBSCRIPTION_IS_NOT_REFUNDABLE);
             }
 
-            RefundRequest refundRequest = RefundRequest.builder()
+            RefundRequestDto refundRequest = RefundRequestDto.builder()
                     .transactionId(subscription.getTransactionId())
                     .amount(subscription.getPlan().getPrice())
                     .reason("User chose immediate cancellation")
                     .build();
 
-            PaymentResponse refundResponse = paymentClient.refund(refundRequest);
+            PaymentResponseDto refundResponse = paymentClient.refund(refundRequest);
             if (!"success".equalsIgnoreCase(refundResponse.getStatus())) {
-                throw new RuntimeException("Refund failed");
+                throw new BadRequestException(PAYMENT_REFUND_FAILED);
             }
 
             subscription.setStatus(SubscriptionStatus.CANCELLED);
@@ -108,9 +113,7 @@ public class SubscriptionServiceHandler implements SubscriptionService {
 
     @Override
     public void enableAutoRenew(Long id) {
-        Subscription subscription = subscriptionRepository
-                .findByIdAndStatus(id, SubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new RuntimeException("Subscription Not Found"));
+        Subscription subscription = getSubscription(id);
 
         subscription.setAutoRenew(true);
         subscriptionRepository.save(subscription);
@@ -118,11 +121,15 @@ public class SubscriptionServiceHandler implements SubscriptionService {
 
     @Override
     public void disableAutoRenew(Long id) {
-        Subscription subscription = subscriptionRepository
-                .findByIdAndStatus(id, SubscriptionStatus.ACTIVE)
-                .orElseThrow(() -> new RuntimeException("Subscription Not Found"));
+        Subscription subscription = getSubscription(id);
 
         subscription.setAutoRenew(false);
         subscriptionRepository.save(subscription);
+    }
+
+    private Subscription getSubscription(Long id) {
+        return subscriptionRepository
+                .findByIdAndStatus(id, SubscriptionStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException(SUBSCRIPTION_NOT_FOUND, id));
     }
 }

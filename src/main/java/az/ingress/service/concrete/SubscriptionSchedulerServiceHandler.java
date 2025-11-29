@@ -1,14 +1,13 @@
 package az.ingress.service.concrete;
 
-import az.ingress.client.PaymentClient;
-import az.ingress.dto.request.PaymentRequest;
-import az.ingress.dto.response.PaymentResponse;
+import az.ingress.client.payment.PaymentClient;
+import az.ingress.dto.request.PaymentRequestDto;
+import az.ingress.dto.response.PaymentResponseDto;
 import az.ingress.entity.Subscription;
 import az.ingress.entity.SubscriptionPlan;
 import az.ingress.enums.SubscriptionStatus;
 import az.ingress.repository.SubscriptionRepository;
 import az.ingress.service.abstraction.SubscriptionSchedulerService;
-import az.ingress.util.SubscriptionPeriodUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,21 +47,21 @@ public class SubscriptionSchedulerServiceHandler implements SubscriptionSchedule
     private void renewSubscription(Subscription subscription) {
         SubscriptionPlan plan = subscription.getPlan();
 
-        PaymentResponse paymentResponse = paymentClient.pay(PaymentRequest.builder()
+        PaymentResponseDto paymentResponseDto = paymentClient.pay(PaymentRequestDto.builder()
                 .userId(subscription.getSupplierId())
                 .cardId(subscription.getCardId())
                 .amount(plan.getPrice())
                 .build());
 
-        if (paymentResponse.getStatus().equals("success")) {
+        if (paymentResponseDto.getStatus().equals("success")) {
             LocalDateTime now = LocalDateTime.now();
-            LocalDateTime newEnd = SubscriptionPeriodUtil.calculateEndDate(now, plan.getPeriod());
+            LocalDateTime newEnd = plan.getPeriod().calculateEndDate(now);
 
             subscription.setStartDate(now);
             subscription.setEndDate(newEnd);
             subscription.setStatus(SubscriptionStatus.ACTIVE);
             subscription.setRenewCount(subscription.getRenewCount() + 1);
-            subscription.setTransactionId(paymentResponse.getTransactionId());
+            subscription.setTransactionId(paymentResponseDto.getTransactionId());
             subscription.setRetryCount(0);
 
             log.info("Subscription renewed id={}, newEnd={}", subscription.getId(), newEnd);

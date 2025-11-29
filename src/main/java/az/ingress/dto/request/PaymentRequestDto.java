@@ -5,14 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefundRequest {
-    private String transactionId;
+public class PaymentRequestDto {
+    @NotNull
+    private long userId;
+    @NotNull
+    private long cardId;
+    @NotNull
     private BigDecimal amount;
-    private String reason;
 }

@@ -10,6 +10,13 @@ client:
 spring:
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: none
+  datasource:
+    url: jdbc:postgresql://localhost:5432/subscription_db
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
 
 subscription:
   scheduler:

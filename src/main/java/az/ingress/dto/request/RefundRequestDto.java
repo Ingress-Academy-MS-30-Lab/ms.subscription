@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentRequest {
-    private long userId;
-    private long cardId;
+public class RefundRequestDto {
+    private String transactionId;
     private BigDecimal amount;
+    private String reason;
 }

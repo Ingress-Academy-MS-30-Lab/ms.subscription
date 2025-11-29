@@ -8,7 +8,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -28,7 +27,6 @@ import static javax.persistence.GenerationType.IDENTITY;
 @Getter
 @Setter
 @Builder
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
@@ -56,7 +54,6 @@ public class SubscriptionPlan {
     private boolean active;
 
     @OneToMany(mappedBy = "plan")
-    @ToString.Exclude
     private List<Subscription> subscriptions;
 
     @CreationTimestamp

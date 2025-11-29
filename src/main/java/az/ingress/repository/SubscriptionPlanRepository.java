@@ -3,12 +3,12 @@ package az.ingress.repository;
 import az.ingress.entity.SubscriptionPlan;
 import az.ingress.enums.SubscriptionPeriod;
 import az.ingress.enums.SubscriptionPlanStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPlan, Long> {
+public interface SubscriptionPlanRepository extends CrudRepository<SubscriptionPlan, Long> {
 
     List<SubscriptionPlan> findAllByActiveIsFalse();
 

@@ -7,7 +7,7 @@ import az.ingress.enums.SubscriptionPeriod;
 import az.ingress.enums.SubscriptionPlanStatus;
 
 public enum SubscriptionPlanMapper {
-    INSTANCE;
+    SUBSCRIPTION_PLAN_MAPPER;
 
     public SubscriptionPlanResponse toResponse(SubscriptionPlan plan) {
         return SubscriptionPlanResponse.builder()
