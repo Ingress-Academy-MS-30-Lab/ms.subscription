@@ -1,24 +1,24 @@
 package az.ingress.service.concrete;
 
-import az.ingress.client.product.ProductClient;
-import az.ingress.dto.request.SubscriptionPlanRequest;
-import az.ingress.dto.response.SubscriptionPlanResponse;
-import az.ingress.entity.SubscriptionPlan;
-import az.ingress.enums.SubscriptionPeriod;
-import az.ingress.enums.SubscriptionPlanStatus;
+import az.ingress.client.ProductClient;
+import az.ingress.dao.entity.SubscriptionPlanEntity;
+import az.ingress.dao.repository.SubscriptionPlanRepository;
 import az.ingress.exception.BadRequestException;
-import az.ingress.exception.ResourceNotFoundException;
-import az.ingress.mapper.SubscriptionPlanMapper;
-import az.ingress.repository.SubscriptionPlanRepository;
+import az.ingress.exception.NotFoundException;
+import az.ingress.model.enums.SubscriptionPeriod;
+import az.ingress.model.request.SubscriptionPlanRequest;
+import az.ingress.model.response.SubscriptionPlanResponse;
 import az.ingress.service.abstraction.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static az.ingress.exception.ErrorMessageKey.PRODUCT_NOT_FOUND;
-import static az.ingress.exception.ErrorMessageKey.SUBSCRIPTION_PLAN_EXISTS;
-import static az.ingress.exception.ErrorMessageKey.SUBSCRIPTION_PLAN_NOT_FOUND;
+import static az.ingress.exception.ErrorMessage.SUBSCRIPTION_PLAN_EXISTS;
+import static az.ingress.exception.ErrorMessage.SUBSCRIPTION_PLAN_NOT_FOUND;
+import static az.ingress.mapper.SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER;
+import static az.ingress.model.enums.SubscriptionPlanStatus.ACTIVE;
+import static az.ingress.model.enums.SubscriptionPlanStatus.PASSIVE;
 
 @Service
 @RequiredArgsConstructor
@@ -28,62 +28,55 @@ public class SubscriptionPlanServiceHandler implements SubscriptionPlanService {
 
     @Override
     public void create(SubscriptionPlanRequest request) {
-        if (!productClient.existsById(request.getProductId()).isExists()) {
-            throw new ResourceNotFoundException(PRODUCT_NOT_FOUND, request.getProductId());
-        }
+        productClient.findById(request.getProductId());
 
-        if (repository.existsByProductIdAndPeriodAndStatusAndActiveFalse(
-                request.getProductId(),
+        if (repository.existsByProductIdAndPeriodAndStatus(request.getProductId(),
                 SubscriptionPeriod.valueOf(request.getPeriod()),
-                SubscriptionPlanStatus.ACTIVE
-        )) {
+                ACTIVE)) {
             throw new BadRequestException(SUBSCRIPTION_PLAN_EXISTS, request.getProductId());
         }
 
-        SubscriptionPlan plan = SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER.toEntity(request);
+        var plan = SUBSCRIPTION_PLAN_MAPPER.toEntity(request);
 
         repository.save(plan);
     }
 
     @Override
-    public List<SubscriptionPlanResponse> getAll() {
-        return repository.findAllByActiveIsFalse().stream()
-                .map(SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER::toResponse)
+    public List<SubscriptionPlanResponse> getAllByProduct(Long productId) {
+        return repository.findAllByStatusAndProductId(ACTIVE, productId).stream()
+                .map(SUBSCRIPTION_PLAN_MAPPER::toResponse)
                 .toList();
     }
 
     @Override
     public SubscriptionPlanResponse get(Long id) {
-        SubscriptionPlan plan = getSubscriptionPlan(id);
+        var plan = getSubscriptionPlan(id);
 
-        return SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER.toResponse(plan);
+        return SUBSCRIPTION_PLAN_MAPPER.toResponse(plan);
     }
 
     @Override
-    public SubscriptionPlanResponse update(Long id, SubscriptionPlanRequest request) {
-        SubscriptionPlan plan = getSubscriptionPlan(id);
+    public void update(Long id, SubscriptionPlanRequest request) {
+        var plan = getSubscriptionPlan(id);
 
         plan.setProductId(request.getProductId());
         plan.setPeriod(SubscriptionPeriod.valueOf(request.getPeriod()));
         plan.setPrice(request.getPrice());
         plan.setDescription(request.getDescription());
-        plan.setStatus(SubscriptionPlanStatus.valueOf(request.getStatus()));
 
         repository.save(plan);
-
-        return SubscriptionPlanMapper.SUBSCRIPTION_PLAN_MAPPER.toResponse(plan);
     }
 
     @Override
     public void delete(Long id) {
-        SubscriptionPlan plan = getSubscriptionPlan(id);
+        var plan = getSubscriptionPlan(id);
 
-        plan.setActive(true);
+        plan.setStatus(PASSIVE);
         repository.save(plan);
     }
 
-    private SubscriptionPlan getSubscriptionPlan(Long id) {
-        return repository.findByIdAndActiveIsTrue(id)
-                .orElseThrow(() -> new ResourceNotFoundException(SUBSCRIPTION_PLAN_NOT_FOUND, id));
+    private SubscriptionPlanEntity getSubscriptionPlan(Long id) {
+        return repository.findByIdAndStatus(id, ACTIVE)
+                .orElseThrow(() -> new NotFoundException(SUBSCRIPTION_PLAN_NOT_FOUND, id));
     }
 }

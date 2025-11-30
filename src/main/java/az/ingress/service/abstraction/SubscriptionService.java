@@ -1,16 +1,12 @@
 package az.ingress.service.abstraction;
 
-import az.ingress.dto.request.SubscriptionRequest;
+import az.ingress.model.request.SubscriptionRequest;
 
 public interface SubscriptionService {
 
-    void createSubscription(SubscriptionRequest request);
+    void createSubscription(String supplierId, SubscriptionRequest request);
 
-    void renewSubscription(Long id);
+    void cancelSubscription(String supplierId, Long id);
 
-    void cancelSubscription(Long id, boolean immediateRefund);
-
-    void enableAutoRenew(Long id);
-
-    void disableAutoRenew(Long id);
+    void updateAutoRenew(String supplierId, Long id, boolean enabled);
 }
