@@ -1,12 +1,12 @@
 plugins {
     id "java"
-    id "org.springframework.boot" version "$springBootVersion"
-    id "io.spring.dependency-management" version "$dependencyManagementVersion"
+    id "org.springframework.boot" version "${springBootVersion}"
+    id "io.spring.dependency-management" version "${dependencyManagementVersion}"
     id "groovy"
 }
 
 group = "az.ingress"
-sourceCompatibility = "17"
+sourceCompatibility = JavaVersion.toVersion("${javaVersion}")
 
 configurations {
     compileOnly {
@@ -18,22 +18,46 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    //spring
-    implementation "org.springframework.boot:spring-boot-starter-web"
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
 
-    //lombok
+dependencies {
+    // Spring
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-aop"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Lombok
     compileOnly "org.projectlombok:lombok"
     annotationProcessor "org.projectlombok:lombok"
 
-    //swagger
-    implementation "org.springdoc:springdoc-openapi-ui:$openApiVersion"
+    // Swagger
+    implementation "org.springdoc:springdoc-openapi-ui:${openApiVersion}"
 
-    //testing
-    testImplementation "org.apache.groovy:groovy:$groovyVersion"
-    testImplementation "io.github.benas:random-beans:$randomBeansVersion"
-    testImplementation "org.spockframework:spock-spring:$spockSpringVersion"
+    // Testing
+    testImplementation "org.apache.groovy:groovy:${groovyVersion}"
+    testImplementation "io.github.benas:random-beans:${randomBeansVersion}"
+    testImplementation "org.spockframework:spock-spring:${spockSpringVersion}"
     testImplementation "org.springframework.boot:spring-boot-starter-test"
+
+    // Feign
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Database
+    runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
+
+    // ShedLock
+    implementation "net.javacrumbs.shedlock:shedlock-spring:${shedLockVersion}"
+    implementation "net.javacrumbs.shedlock:shedlock-provider-jdbc-template:${shedLockJdbcTemplateVersion}"
+
+    // Liquibase
+    implementation "org.liquibase:liquibase-core:${liquibaseVersion}"
 }
 
 test {
